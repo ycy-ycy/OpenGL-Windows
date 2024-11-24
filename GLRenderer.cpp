@@ -57,7 +57,11 @@ void GLRenderer::Renderer() {
 	glClearColor(1.0f, 0.7f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
+
+	glBindVertexArray(vao2);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	SwapBuffers(dc);
 }
@@ -68,6 +72,8 @@ void GLRenderer::InitializeGL() {
 
 	GLint posLoc = glGetAttribLocation(program, "pos");
 
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 	glGenBuffers(1, &vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(
@@ -86,6 +92,29 @@ void GLRenderer::InitializeGL() {
 		(void*)(0) // offset
 	);
 	glBindBuffer(GL_ARRAY_BUFFER, NULL);
+	glBindVertexArray(NULL);
+
+	glGenVertexArrays(1, &vao2);
+	glBindVertexArray(vao2);
+	glGenBuffers(1, &vbo2);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+	glBufferData(
+		GL_ARRAY_BUFFER,
+		sizeof(vertices2),
+		vertices2,
+		GL_STATIC_DRAW
+	);
+	glEnableVertexAttribArray(posLoc);
+	glVertexAttribPointer(
+		posLoc,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		3 * sizeof(GLfloat), // stride
+		(void*)(0) // offset
+	);
+	glBindBuffer(GL_ARRAY_BUFFER, NULL);
+	glBindVertexArray(NULL);
 
 	assert(!glGetError());
 }

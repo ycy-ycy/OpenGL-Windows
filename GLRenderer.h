@@ -35,8 +35,15 @@ private:
 		-0.5f, -0.5f, 0.0f,
 		0.5f, -0.5f, 0.0f
 	};
+	GLuint vbo, vao;
 
-	GLuint vbo;
+	GLfloat vertices2[12] = {
+		0.6f, 0.6f, 0.0f,
+		0.7f, 0.6f, 0.0f,
+		0.7f, 0.7f, 0.0f,
+		0.8f, 0.7f, 0.0f
+	};
+	GLuint vbo2, vao2;
 
 };
 
