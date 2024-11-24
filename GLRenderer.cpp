@@ -10,6 +10,8 @@ GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	assert(glewInit() == GLEW_OK);
 
 	Resize(width, height);
+
+	InitializeGL();
 }
 
 void GLRenderer::Resize(int width, int height) {
@@ -52,8 +54,94 @@ bool GLRenderer::CreateGLContext() {
 }
 
 void GLRenderer::Renderer() {
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClearColor(1.0f, 0.7f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glDrawArrays(GL_TRIANGLES, 0, 3);
+
 	SwapBuffers(dc);
+}
+
+void GLRenderer::InitializeGL() {
+	GLuint program = CreateGPUProgram("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
+	glUseProgram(program);
+
+	GLint posLoc = glGetAttribLocation(program, "pos");
+
+	glGenBuffers(1, &vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(
+		GL_ARRAY_BUFFER,
+		sizeof(vertices),
+		vertices,
+		GL_STATIC_DRAW
+	);
+	glEnableVertexAttribArray(posLoc);
+	glVertexAttribPointer(
+		posLoc,
+		3,
+		GL_FLOAT, 
+		GL_FALSE,
+		3 * sizeof(GLfloat), // stride
+		(void*)(0) // offset
+	);
+	glBindBuffer(GL_ARRAY_BUFFER, NULL);
+
+	assert(!glGetError());
+}
+
+GLuint GLRenderer::CompileShader(GLenum shaderType, const char* url) {
+	char* shaderCode = LoadFileContext(url);
+
+	const char* shaderTypeStr = shaderType==GL_FRAGMENT_SHADER ? "Fragment" : "Vertex";
+
+	GLuint shader = glCreateShader(shaderType);
+	if (!shader) {
+		throw;
+	}
+	glShaderSource(shader, 1, &shaderCode, NULL);
+	glCompileShader(shader);
+
+	GLint succeeded = GL_TRUE;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &succeeded);
+	if (!succeeded) {
+		char infoLog[1024];
+		GLsizei loglen = 0;
+		glGetShaderInfoLog(shader, sizeof(infoLog), &loglen, infoLog);
+		printf("Compile %s Shader Error: %s\n", shaderTypeStr, infoLog);
+		glDeleteShader(shader);
+		throw;
+	}
+
+	delete shaderCode;
+
+	return shader;
+}
+
+GLuint GLRenderer::CreateGPUProgram(const char* vs, const char* fs) {
+	GLuint vshader = CompileShader(GL_VERTEX_SHADER, vs);
+	GLuint fshader = CompileShader(GL_FRAGMENT_SHADER, fs);
+
+	GLuint shaderProgram = glCreateProgram();
+	glAttachShader(shaderProgram, vshader);
+	glAttachShader(shaderProgram, fshader);
+	glLinkProgram(shaderProgram);
+
+	GLint succeeded = GL_TRUE;
+	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &succeeded);
+	if (!succeeded) {
+		char infoLog[1024];
+		GLsizei loglen = 0;
+		glGetShaderInfoLog(shaderProgram, sizeof(infoLog), &loglen, infoLog);
+		printf("Linking Error: %s\n", infoLog);
+		glDeleteProgram(shaderProgram);
+		throw;
+	}
+
+	glDetachShader(shaderProgram, vshader);
+	glDetachShader(shaderProgram, fshader);
+	glDeleteShader(vshader);
+	glDeleteShader(fshader);
+
+	return shaderProgram;
 }

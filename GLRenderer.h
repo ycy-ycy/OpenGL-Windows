@@ -5,6 +5,8 @@
 #include <Windows.h>
 #include <GL/glew.h>
 
+#include "GLTools.h"
+
 #pragma comment(lib, "opengl32.lib")
 #pragma comment(lib, "glew32.lib")
 
@@ -18,12 +20,23 @@ public:
 
 private:
 	bool CreateGLContext();
+	void InitializeGL();
+	GLuint CompileShader(GLenum shaderType, const char* url);
+	GLuint CreateGPUProgram(const char* vs, const char* fs);
 
 private:
 	HDC dc;
 	HGLRC rc;
 	HWND handle;
 	int width, height;
+
+	GLfloat vertices[9] = {
+		0.0f, 0.5f, 0.0f,
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f
+	};
+
+	GLuint vbo;
 
 };
 
