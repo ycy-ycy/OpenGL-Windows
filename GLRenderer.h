@@ -2,13 +2,7 @@
 
 //#define GLEW_STATIC
 
-#include <Windows.h>
-#include <GL/glew.h>
-
 #include "GLTools.h"
-
-#pragma comment(lib, "opengl32.lib")
-#pragma comment(lib, "glew32.lib")
 
 class GLRenderer {
 
@@ -21,8 +15,6 @@ public:
 private:
 	bool CreateGLContext();
 	void InitializeGL();
-	GLuint CompileShader(GLenum shaderType, const char* url);
-	GLuint CreateGPUProgram(const char* vs, const char* fs);
 
 private:
 	HDC dc;
@@ -30,17 +22,22 @@ private:
 	HWND handle;
 	int width, height;
 
-	GLfloat vertices[24] = {
-		-0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.7f,
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-		0.5f, -0.5f, 0.0f, 0.0f, 0.2f, 1.0f,
-		0.5f, 0.5f, 0.0f, 0.0f, 0.9f, 0.9f
+	GLuint program;
+	GLfloat vertices[32] = {
+		// positions       // colors        // texture coords
+		-0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.7f, 0.0f, 1.0f,
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.5f, -0.5f, 0.0f, 0.0f, 0.2f, 1.0f, 1.0f, 0.0f,
+		0.5f, 0.5f, 0.0f, 0.0f, 0.9f, 0.9f, 1.0f, 1.0f
 	};
 	GLuint vbo, vao, ebo;
 	GLuint indices[6] = {
 		0, 1, 2,
 		0, 2, 3
 	};
+	GLuint texture;
+	GLint smp;
+	ULONG_PTR gdiplusToken;
 
 };
 

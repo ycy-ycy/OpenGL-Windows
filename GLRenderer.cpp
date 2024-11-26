@@ -1,5 +1,4 @@
 #include "GLRenderer.h"
-#include <assert.h>
 
 GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	handle = hwnd;
@@ -7,7 +6,9 @@ GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	CreateGLContext();
 	wglMakeCurrent(dc, rc);
 
-	assert(glewInit() == GLEW_OK);
+	if (glewInit() != GLEW_OK) {
+		throw "GLEW Init Error";
+	}
 
 	Resize(width, height);
 
@@ -28,6 +29,7 @@ GLRenderer::~GLRenderer() {
 	if (dc) {
 		ReleaseDC(handle, dc);
 	}
+	Gdiplus::GdiplusShutdown(gdiplusToken);
 }
 
 bool GLRenderer::CreateGLContext() {
@@ -57,6 +59,12 @@ void GLRenderer::Renderer() {
 	glClearColor(1.0f, 0.7f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	glUseProgram(program);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glUniform1i(smp, 0);
+
 	glBindVertexArray(vao);
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -66,107 +74,48 @@ void GLRenderer::Renderer() {
 }
 
 void GLRenderer::InitializeGL() {
-	GLuint program = CreateGPUProgram("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
-	glUseProgram(program);
+	program = CreateGPUProgram("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
 
 	GLint posLoc = glGetAttribLocation(program, "pos");
 	GLint colLoc = glGetAttribLocation(program, "col");
+	GLint texCoordLoc = glGetAttribLocation(program, "texCoord");
+
+	smp = glGetUniformLocation(program, "uTexture");
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
-	glGenBuffers(1, &vbo);
+
+	CreateGLBuffer(&vbo, GL_ARRAY_BUFFER, GL_STATIC_DRAW, sizeof(vertices), vertices);
+
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(
-		GL_ARRAY_BUFFER,
-		sizeof(vertices),
-		vertices,
-		GL_STATIC_DRAW
-	);
 	glEnableVertexAttribArray(posLoc);
 	glVertexAttribPointer(
 		posLoc,
 		3,
 		GL_FLOAT, 
 		GL_FALSE,
-		6 * sizeof(GLfloat), // stride
+		8 * sizeof(GLfloat), // stride
 		(void*)(0) // offset
 	);
 	glEnableVertexAttribArray(colLoc);
-	glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(texCoordLoc);
+	glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
 
-	glGenBuffers(1, &ebo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glBufferData(
-		GL_ELEMENT_ARRAY_BUFFER,
-		sizeof(indices),
-		indices,
-		GL_STATIC_DRAW
-	);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, NULL); // ebo
 	glBindBuffer(GL_ARRAY_BUFFER, NULL); // vbo
 	glBindVertexArray(NULL); // vao
 
+	CreateGLBuffer(&ebo, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, sizeof(indices), indices);
 
-	assert(!glGetError());
+	Gdiplus::GdiplusStartup(&gdiplusToken, new Gdiplus::GdiplusStartupInput(), NULL);
+
+	LoadTextureImage(&texture, L"assets/resources/img/texture.png", GL_TEXTURE_2D, 0, GL_RGBA, GL_BGRA);
+
+	if (glGetError()) {
+		throw;
+	}
 
 	//direction: +z: front; -z: back.
 	glPolygonMode(GL_FRONT, GL_FILL);
 	glPolygonMode(GL_BACK, GL_LINE);
-}
-
-GLuint GLRenderer::CompileShader(GLenum shaderType, const char* url) {
-	char* shaderCode = LoadFileContext(url);
-
-	const char* shaderTypeStr = shaderType==GL_FRAGMENT_SHADER ? "Fragment" : "Vertex";
-
-	GLuint shader = glCreateShader(shaderType);
-	if (!shader) {
-		throw;
-	}
-	glShaderSource(shader, 1, &shaderCode, NULL);
-	glCompileShader(shader);
-
-	GLint succeeded = GL_TRUE;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &succeeded);
-	if (!succeeded) {
-		char infoLog[1024];
-		GLsizei loglen = 0;
-		glGetShaderInfoLog(shader, sizeof(infoLog), &loglen, infoLog);
-		printf("Compile %s Shader Error: %s\n", shaderTypeStr, infoLog);
-		glDeleteShader(shader);
-		throw;
-	}
-
-	delete shaderCode;
-
-	return shader;
-}
-
-GLuint GLRenderer::CreateGPUProgram(const char* vs, const char* fs) {
-	GLuint vshader = CompileShader(GL_VERTEX_SHADER, vs);
-	GLuint fshader = CompileShader(GL_FRAGMENT_SHADER, fs);
-
-	GLuint shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vshader);
-	glAttachShader(shaderProgram, fshader);
-	glLinkProgram(shaderProgram);
-
-	GLint succeeded = GL_TRUE;
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &succeeded);
-	if (!succeeded) {
-		char infoLog[1024];
-		GLsizei loglen = 0;
-		glGetShaderInfoLog(shaderProgram, sizeof(infoLog), &loglen, infoLog);
-		printf("Linking Error: %s\n", infoLog);
-		glDeleteProgram(shaderProgram);
-		throw;
-	}
-
-	glDetachShader(shaderProgram, vshader);
-	glDetachShader(shaderProgram, fshader);
-	glDeleteShader(vshader);
-	glDeleteShader(fshader);
-
-	return shaderProgram;
 }
