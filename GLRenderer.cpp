@@ -70,6 +70,7 @@ void GLRenderer::InitializeGL() {
 	glUseProgram(program);
 
 	GLint posLoc = glGetAttribLocation(program, "pos");
+	GLint colLoc = glGetAttribLocation(program, "col");
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
@@ -87,9 +88,11 @@ void GLRenderer::InitializeGL() {
 		3,
 		GL_FLOAT, 
 		GL_FALSE,
-		3 * sizeof(GLfloat), // stride
+		6 * sizeof(GLfloat), // stride
 		(void*)(0) // offset
 	);
+	glEnableVertexAttribArray(colLoc);
+	glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
 
 	glGenBuffers(1, &ebo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
