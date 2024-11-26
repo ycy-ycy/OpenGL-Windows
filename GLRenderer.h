@@ -30,20 +30,17 @@ private:
 	HWND handle;
 	int width, height;
 
-	GLfloat vertices[9] = {
-		0.0f, 0.5f, 0.0f,
+	GLfloat vertices[12] = {
+		-0.5f, 0.5f, 0.0f,
 		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f
+		0.5f, -0.5f, 0.0f,
+		0.5f, 0.5f, 0.0f
 	};
-	GLuint vbo, vao;
-
-	GLfloat vertices2[12] = {
-		0.6f, 0.6f, 0.0f,
-		0.7f, 0.6f, 0.0f,
-		0.7f, 0.7f, 0.0f,
-		0.8f, 0.7f, 0.0f
+	GLuint vbo, vao, ebo;
+	GLuint indices[6] = {
+		0, 1, 2,
+		2, 0, 3
 	};
-	GLuint vbo2, vao2;
 
 };
 

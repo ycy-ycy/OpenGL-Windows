@@ -58,10 +58,9 @@ void GLRenderer::Renderer() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
-
-	glBindVertexArray(vao2);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	//glDrawArrays(GL_TRIANGLES, 0, 3);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
 
 	SwapBuffers(dc);
 }
@@ -91,32 +90,26 @@ void GLRenderer::InitializeGL() {
 		3 * sizeof(GLfloat), // stride
 		(void*)(0) // offset
 	);
-	glBindBuffer(GL_ARRAY_BUFFER, NULL);
-	glBindVertexArray(NULL);
 
-	glGenVertexArrays(1, &vao2);
-	glBindVertexArray(vao2);
-	glGenBuffers(1, &vbo2);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo2);
+	glGenBuffers(1, &ebo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 	glBufferData(
-		GL_ARRAY_BUFFER,
-		sizeof(vertices2),
-		vertices2,
+		GL_ELEMENT_ARRAY_BUFFER,
+		sizeof(indices),
+		indices,
 		GL_STATIC_DRAW
 	);
-	glEnableVertexAttribArray(posLoc);
-	glVertexAttribPointer(
-		posLoc,
-		3,
-		GL_FLOAT,
-		GL_FALSE,
-		3 * sizeof(GLfloat), // stride
-		(void*)(0) // offset
-	);
-	glBindBuffer(GL_ARRAY_BUFFER, NULL);
-	glBindVertexArray(NULL);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, NULL); // ebo
+	glBindBuffer(GL_ARRAY_BUFFER, NULL); // vbo
+	glBindVertexArray(NULL); // vao
+
 
 	assert(!glGetError());
+
+	//direction: +z: front; -z: back.
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glPolygonMode(GL_BACK, GL_LINE);
 }
 
 GLuint GLRenderer::CompileShader(GLenum shaderType, const char* url) {
