@@ -1,13 +1,17 @@
-attribute vec3 pos;
-attribute vec3 col;
-attribute vec2 texCoord;
+in vec3 pos;
+in vec3 col;
+in vec2 texCoord;
 
-varying vec3 vCol;
-varying vec2 vTexCoord;
+out vec3 vCol;
+out vec2 vTexCoord;
+
+uniform mat4 modelMat;
+uniform mat4 viewMat;
+uniform mat4 projMat;
 
 void main() {
 	vCol = col;
 	vTexCoord = texCoord;
 	vTexCoord.y *= -1;
-	gl_Position = vec4(pos, 1.0);
+	gl_Position = projMat * viewMat * modelMat * vec4(pos, 1.0);
 }

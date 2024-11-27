@@ -4,6 +4,10 @@
 
 #include "GLTools.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 class GLRenderer {
 
 public:
@@ -30,6 +34,7 @@ private:
 		0.5f, -0.5f, 0.0f, 0.0f, 0.2f, 1.0f, 1.0f, 0.0f,
 		0.5f, 0.5f, 0.0f, 0.0f, 0.9f, 0.9f, 1.0f, 1.0f
 	};
+	GLint posLoc, colLoc, texCoordLoc;
 	GLuint vbo, vao, ebo;
 	GLuint indices[6] = {
 		0, 1, 2,
@@ -38,6 +43,7 @@ private:
 	GLuint texture;
 	GLint smp;
 	ULONG_PTR gdiplusToken;
+	GLint modelLoc, viewLoc, projLoc;
 
 };
 

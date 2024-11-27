@@ -1,5 +1,5 @@
-varying vec3 vCol;
-varying vec2 vTexCoord;
+in vec3 vCol;
+in vec2 vTexCoord;
 
 uniform sampler2D uTexture;
 

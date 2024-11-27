@@ -65,6 +65,24 @@ void GLRenderer::Renderer() {
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glUniform1i(smp, 0);
 
+	glm::mat4 modelMat = glm::mat4(1.0f);
+	glm::mat4 viewMat = glm::mat4(1.0f);
+	glm::mat4 projMat = glm::mat4(1.0f);
+
+	modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.0f, -1.5f));
+
+	glm::vec3 eyePoint(0.0f, 0.0f, 0.0f);
+	glm::vec3 lookAtPoint = eyePoint + glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 upVector(0.0f, 1.0f, 0.0f);
+	viewMat = glm::lookAt(eyePoint, lookAtPoint, upVector);
+
+	float aspectRatio = static_cast<GLfloat>(width) / static_cast<GLfloat>(height);
+	projMat = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
+
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+
 	glBindVertexArray(vao);
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -76,9 +94,12 @@ void GLRenderer::Renderer() {
 void GLRenderer::InitializeGL() {
 	program = CreateGPUProgram("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
 
-	GLint posLoc = glGetAttribLocation(program, "pos");
-	GLint colLoc = glGetAttribLocation(program, "col");
-	GLint texCoordLoc = glGetAttribLocation(program, "texCoord");
+	posLoc = glGetAttribLocation(program, "pos");
+	colLoc = glGetAttribLocation(program, "col");
+	texCoordLoc = glGetAttribLocation(program, "texCoord");
+	modelLoc = glGetUniformLocation(program, "modelMat");
+	viewLoc = glGetUniformLocation(program, "viewMat");
+	projLoc = glGetUniformLocation(program, "projMat");
 
 	smp = glGetUniformLocation(program, "uTexture");
 
