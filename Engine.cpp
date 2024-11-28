@@ -177,6 +177,35 @@ LRESULT Engine::WinProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 		return 0;
 	}
 
+	case WM_KEYDOWN: {
+		renderer->KeyDown(wParam);
+		return 0;
+	}
+
+	case WM_KEYUP: {
+		renderer->KeyUp(wParam);
+		return 0;
+	}
+
+	case WM_LBUTTONDOWN: {
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		renderer->LButtonDown(x, y);
+		return 0;
+	}
+
+	case WM_LBUTTONUP: {
+		renderer->LButtonUp();
+		return 0;
+	}
+
+	case WM_MOUSEMOVE: {
+		int x = LOWORD(lParam);
+		int y = HIWORD(lParam);
+		renderer->MouseMove(x, y);
+		return 0;
+	}
+
 	default: {
 		return DefWindowProc(hwnd, uMsg, wParam, lParam);
 	}

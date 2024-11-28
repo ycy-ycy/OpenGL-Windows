@@ -3,10 +3,8 @@
 //#define GLEW_STATIC
 
 #include "GLTools.h"
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "Camera.h"
+#include "Timer.h"
 
 class GLRenderer {
 
@@ -45,5 +43,22 @@ private:
 	ULONG_PTR gdiplusToken;
 	GLint modelLoc, viewLoc, projLoc;
 
+public:
+	void KeyDown(UINT key);
+	void KeyUp(UINT key);
+	void LButtonDown(int x, int y);
+	void LButtonUp();
+	void MouseMove(int x, int y);
+
+private:
+	void Tick();
+
+private:
+	Camera camera;
+	int Wdown = 0, Sdown = 0, Adown = 0, Ddown = 0, Zdown = 0, Cdown = 0, Qdown = 0, Edown = 0;
+	Timer timer;
+	float speed = 0.5f, rotSpeed = 0.1f, rollSpeed = 4.0f;
+	int lastX = 0, lastY = 0;
+	bool Ldown = false;
 };
 

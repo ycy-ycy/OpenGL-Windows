@@ -3,6 +3,8 @@
 GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	handle = hwnd;
 
+	camera = Camera(glm::vec3(0.0f, 0.0f, 1.5f), 45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+
 	CreateGLContext();
 	wglMakeCurrent(dc, rc);
 
@@ -13,6 +15,9 @@ GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	Resize(width, height);
 
 	InitializeGL();
+
+	timer.Start(20, std::bind(&GLRenderer::Tick, this));
+	//timer.Start(20, [](){});
 }
 
 void GLRenderer::Resize(int width, int height) {
@@ -66,22 +71,10 @@ void GLRenderer::Renderer() {
 	glUniform1i(smp, 0);
 
 	glm::mat4 modelMat = glm::mat4(1.0f);
-	glm::mat4 viewMat = glm::mat4(1.0f);
-	glm::mat4 projMat = glm::mat4(1.0f);
-
-	modelMat = glm::translate(modelMat, glm::vec3(0.0f, 0.0f, -1.5f));
-
-	glm::vec3 eyePoint(0.0f, 0.0f, 0.0f);
-	glm::vec3 lookAtPoint = eyePoint + glm::vec3(0.0f, 0.0f, -1.0f);
-	glm::vec3 upVector(0.0f, 1.0f, 0.0f);
-	viewMat = glm::lookAt(eyePoint, lookAtPoint, upVector);
-
-	float aspectRatio = static_cast<GLfloat>(width) / static_cast<GLfloat>(height);
-	projMat = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
 
 	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(viewMat));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projMat));
+	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
+	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(camera.GetProjMatrix()));
 
 	glBindVertexArray(vao);
 	//glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -137,6 +130,109 @@ void GLRenderer::InitializeGL() {
 	}
 
 	//direction: +z: front; -z: back.
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);
+	/*glPolygonMode(GL_FRONT, GL_FILL);
+	glPolygonMode(GL_BACK, GL_LINE);*/
+}
+
+void GLRenderer::KeyDown(UINT key) {
+	switch (key) {
+	case 'W':
+		Wdown = 1;
+		break;
+	case 'S':
+		Sdown = 1;
+		break;
+	case 'A':
+		Adown = 1;
+		break;
+	case 'D':
+		Ddown = 1;
+		break;
+	case 'Z':
+		Zdown = 1;
+		break;
+	case 'C':
+		Cdown = 1;
+		break;
+	case 'Q':
+		Qdown = 1;
+		break;
+	case 'E':
+		Edown = 1;
+		break;
+	}
+}
+
+void GLRenderer::KeyUp(UINT key) {
+	switch (key) {
+	case 'W':
+		Wdown = 0;
+		break;
+	case 'S':
+		Sdown = 0;
+		break;
+	case 'A':
+		Adown = 0;
+		break;
+	case 'D':
+		Ddown = 0;
+		break;
+	case 'Z':
+		Zdown = 0;
+		break;
+	case 'C':
+		Cdown = 0;
+		break;
+	case 'Q':
+		Qdown = 0;
+		break;
+	case 'E':
+		Edown = 0;
+		break;
+	}
+}
+
+void GLRenderer::LButtonDown(int x, int y) {
+	Ldown = true;
+	lastX = x;
+	lastY = y;
+}
+
+void GLRenderer::LButtonUp() {
+	Ldown = false;
+}
+
+void GLRenderer::MouseMove(int x, int y) {
+	if (Ldown) {
+		int dx = x - lastX;
+		int dy = y - lastY;
+		camera.Rotate(dy * rotSpeed, -dx * rotSpeed, 0.0f);
+		lastX = x;
+		lastY = y;
+	}
+}
+
+void GLRenderer::Tick() {
+	static DWORD lastTime = 0;
+	if (lastTime == 0) {
+		lastTime = GetTickCount();
+	}
+	DWORD nowTime = GetTickCount();
+	float deltaTime = (nowTime - lastTime) / 1000.0f;
+	lastTime = nowTime;
+
+	int z = Wdown - Sdown;
+	int x = Adown - Ddown;
+	int y = Cdown - Zdown;
+
+	float speed = this->speed;
+	if (z * z + x * x + y * y > 0) {
+		speed = this->speed / sqrt(z * z + x * x + y * y);
+	}
+	camera.Translate(glm::vec3(x * speed, y * speed, z * speed) * deltaTime);
+
+	int roll = Edown - Qdown;
+	camera.Rotate(0.0f, 0.0f, roll * rollSpeed * deltaTime);
+
+	Renderer();
 }
