@@ -3,7 +3,7 @@
 GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	handle = hwnd;
 
-	camera = Camera(glm::vec3(0.0f, 0.0f, 1.5f), 45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
+	camera = Camera(glm::vec3(0.0f, 0.0f, 4.0f), 45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 
 	CreateGLContext();
 	wglMakeCurrent(dc, rc);
@@ -77,9 +77,9 @@ void GLRenderer::Renderer() {
 	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(camera.GetProjMatrix()));
 
 	glBindVertexArray(vao);
-	//glDrawArrays(GL_TRIANGLES, 0, 3);
+	//glDrawArrays(GL_TRIANGLES, 0, mesh->vertexCount);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, NULL);
+	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, NULL);
 
 	SwapBuffers(dc);
 }
@@ -99,7 +99,9 @@ void GLRenderer::InitializeGL() {
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	CreateGLBuffer(&vbo, GL_ARRAY_BUFFER, GL_STATIC_DRAW, sizeof(vertices), vertices);
+	mesh = LoadObjModel("assets/teapot.obj");
+
+	CreateGLBuffer(&vbo, GL_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->vertexCount * sizeof(Vertex), mesh->vertices);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glEnableVertexAttribArray(posLoc);
@@ -119,7 +121,7 @@ void GLRenderer::InitializeGL() {
 	glBindBuffer(GL_ARRAY_BUFFER, NULL); // vbo
 	glBindVertexArray(NULL); // vao
 
-	CreateGLBuffer(&ebo, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, sizeof(indices), indices);
+	CreateGLBuffer(&ebo, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->indexCount * sizeof(uint32_t), mesh->indices);
 
 	Gdiplus::GdiplusStartup(&gdiplusToken, new Gdiplus::GdiplusStartupInput(), NULL);
 
@@ -132,6 +134,7 @@ void GLRenderer::InitializeGL() {
 	//direction: +z: front; -z: back.
 	/*glPolygonMode(GL_FRONT, GL_FILL);
 	glPolygonMode(GL_BACK, GL_LINE);*/
+	glEnable(GL_DEPTH_TEST);
 }
 
 void GLRenderer::KeyDown(UINT key) {
@@ -151,8 +154,8 @@ void GLRenderer::KeyDown(UINT key) {
 	case 'Z':
 		Zdown = 1;
 		break;
-	case 'C':
-		Cdown = 1;
+	case VK_SPACE:
+		Spacedown = 1;
 		break;
 	case 'Q':
 		Qdown = 1;
@@ -180,8 +183,8 @@ void GLRenderer::KeyUp(UINT key) {
 	case 'Z':
 		Zdown = 0;
 		break;
-	case 'C':
-		Cdown = 0;
+	case VK_SPACE:
+		Spacedown = 0;
 		break;
 	case 'Q':
 		Qdown = 0;
@@ -223,7 +226,7 @@ void GLRenderer::Tick() {
 
 	int z = Wdown - Sdown;
 	int x = Adown - Ddown;
-	int y = Cdown - Zdown;
+	int y = Spacedown - Zdown;
 
 	float speed = this->speed;
 	if (z * z + x * x + y * y > 0) {

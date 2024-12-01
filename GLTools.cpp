@@ -113,3 +113,104 @@ void CreateGLBuffer(GLuint* buffer, GLenum type, GLenum usage, GLsizei size, con
 	glBufferData(type, size, data, usage);
 	glBindBuffer(type, NULL);
 }
+
+Mesh* LoadObjModel(const char* url, bool dropRepeat)
+{
+	char* fileContext = LoadFileContext(url);
+	if (!fileContext) {
+		return nullptr;
+	}
+
+	std::stringstream stream(fileContext);
+	delete[] fileContext;
+
+	std::vector<VertexAttri> positions, normals, texCoords;
+	std::vector<VertexIndex> vertices;
+	std::vector<uint32_t> indices;
+
+	std::string tmp;
+	while (!stream.eof()) {
+		const int MAX_LINE_LEN = 1024;
+		char line[MAX_LINE_LEN];
+		stream.getline(line, MAX_LINE_LEN);
+
+		std::stringstream lineStream(line);
+		if (line[0] == 'v') {
+			if (line[1] == 't') {
+				lineStream >> tmp;
+				VertexAttri vt;
+				lineStream >> vt.x;
+				lineStream >> vt.y;
+				lineStream >> vt.z;
+				texCoords.push_back(vt);
+			}
+			else if (line[1] == 'n') {
+				lineStream >> tmp;
+				VertexAttri vn;
+				lineStream >> vn.x;
+				lineStream >> vn.y;
+				lineStream >> vn.z;
+				normals.push_back(vn);
+			}
+			else {
+				lineStream >> tmp;
+				VertexAttri vp;
+				lineStream >> vp.x;
+				lineStream >> vp.y;
+				lineStream >> vp.z;
+				positions.push_back(vp);
+			}
+		}
+		else if (line[0] == 'f') {
+			lineStream >> tmp;
+			for (int i = 0; i < 3; i++) {
+				lineStream >> tmp;
+				int pos1 = tmp.find_first_of('/');
+				std::string v = tmp.substr(0, pos1);
+				int pos2 = tmp.find_first_of('/', pos1 + 1);
+				std::string t = tmp.substr(pos1 + 1, pos2 - pos1 - 1);
+				std::string n = tmp.substr(pos2 + 1, tmp.length() - pos2 - 1);
+				VertexIndex vi{
+					std::stoi(v) - 1,
+					std::stoi(n) - 1,
+					std::stoi(t) - 1
+				};
+
+				int idx = -1;
+				if (dropRepeat) {
+					int cct = vertices.size();
+					for (int k = 0; k < cct; k++) {
+						if (
+							vi.position == vertices[k].position &&
+							vi.normal == vertices[k].normal &&
+							vi.texCoord == vertices[k].texCoord
+							) {
+							idx = k;
+							break;
+						}
+					}
+				}
+				if (idx == -1) {
+					idx = vertices.size();
+					vertices.push_back(vi);
+				}
+				indices.push_back(idx);
+			}
+		}
+	}
+
+	Mesh* mesh = new Mesh();
+	mesh->indexCount = indices.size();
+	mesh->indices = new uint32_t[mesh->indexCount];
+	memcpy(mesh->indices, indices.data(), sizeof(uint32_t) * mesh->indexCount);
+	mesh->vertexCount = vertices.size();
+	mesh->vertices = new Vertex[mesh->vertexCount];
+	for (int i = 0; i < mesh->vertexCount; i++) {
+		memcpy(&mesh->vertices[i].position, &positions[vertices[i].position], sizeof(float) * 3);
+		memcpy(&mesh->vertices[i].normal, &normals[vertices[i].normal], sizeof(float) * 3);
+		memcpy(&mesh->vertices[i].texCoord, &texCoords[vertices[i].texCoord], sizeof(float) * 2);
+	}
+	mesh->faceCount = mesh->indexCount / 3;
+
+	return mesh;
+}

@@ -42,6 +42,7 @@ private:
 	GLint smp;
 	ULONG_PTR gdiplusToken;
 	GLint modelLoc, viewLoc, projLoc;
+	Mesh* mesh = nullptr;
 
 public:
 	void KeyDown(UINT key);
@@ -55,9 +56,9 @@ private:
 
 private:
 	Camera camera;
-	int Wdown = 0, Sdown = 0, Adown = 0, Ddown = 0, Zdown = 0, Cdown = 0, Qdown = 0, Edown = 0;
+	int Wdown = 0, Sdown = 0, Adown = 0, Ddown = 0, Zdown = 0, Spacedown = 0, Qdown = 0, Edown = 0;
 	Timer timer;
-	float speed = 0.5f, rotSpeed = 0.1f, rollSpeed = 4.0f;
+	float speed = 2.0f, rotSpeed = 0.1f, rollSpeed = 15.0f;
 	int lastX = 0, lastY = 0;
 	bool Ldown = false;
 };
