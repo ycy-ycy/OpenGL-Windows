@@ -3,8 +3,6 @@
 GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 	handle = hwnd;
 
-	camera = Camera(glm::vec3(0.0f, 0.0f, 4.0f), 45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
-
 	CreateGLContext();
 	wglMakeCurrent(dc, rc);
 
@@ -37,7 +35,9 @@ GLRenderer::~GLRenderer() {
 		ReleaseDC(handle, dc);
 	}
 	Gdiplus::GdiplusShutdown(gdiplusToken);
-	delete mesh;
+	timer.Stop();
+	delete texture;
+	delete model;
 	delete shader;
 }
 
@@ -68,52 +68,20 @@ void GLRenderer::Renderer() {
 	glClearColor(1.0f, 0.7f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	shader->Apply();
-	shader->SetTexture2D("uTexture", texture);
-
-	glm::mat4 modelMat = glm::mat4(1.0f);
-
-	glUniformMatrix4fv(shader->modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
-	glUniformMatrix4fv(shader->viewLoc, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
-	glUniformMatrix4fv(shader->projLoc, 1, GL_FALSE, glm::value_ptr(camera.GetProjMatrix()));
-
-	glBindVertexArray(vao);
-	//glDrawArrays(GL_TRIANGLES, 0, mesh->vertexCount);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-	glDrawElements(GL_TRIANGLES, mesh->indexCount, GL_UNSIGNED_INT, NULL);
+	model->Apply();
+	model->SetTexture2D("uTexture", texture);
+	model->Draw(glm::value_ptr(camera.GetViewMatrix()), glm::value_ptr(camera.GetProjMatrix()));
 
 	SwapBuffers(dc);
 }
 
 void GLRenderer::InitializeGL() {
+	camera = Camera(glm::vec3(0.0f, 0.0f, 4.0f), 45.0f, static_cast<float>(width) / static_cast<float>(height), 0.1f, 100.0f);
 	shader = new Shader("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
 	texture = new Texture2D(L"assets/resources/img/texture.png", 0, GL_RGBA, GL_BGRA);
-	mesh = LoadObjModel("assets/teapot.obj");
+	model = new Model("assets/teapot.obj", shader);
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	CreateGLBuffer(&vbo, GL_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->vertexCount * sizeof(Vertex), mesh->vertices);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glEnableVertexAttribArray(shader->posLoc);
-	glVertexAttribPointer(
-		shader->posLoc,
-		3,
-		GL_FLOAT, 
-		GL_FALSE,
-		8 * sizeof(GLfloat), // stride
-		(void*)(0) // offset
-	);
-	glEnableVertexAttribArray(shader->colLoc);
-	glVertexAttribPointer(shader->colLoc, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(shader->texCoordLoc);
-	glVertexAttribPointer(shader->texCoordLoc, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-
-	glBindBuffer(GL_ARRAY_BUFFER, NULL); // vbo
-	glBindVertexArray(NULL); // vao
-
-	CreateGLBuffer(&ebo, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->indexCount * sizeof(uint32_t), mesh->indices);
+	model->Bind();
 
 	CheckGLError();
 }

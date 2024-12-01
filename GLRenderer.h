@@ -4,6 +4,7 @@
 
 #include "Shader.h"
 #include "Texture2D.h"
+#include "Model.h"
 #include "Camera.h"
 #include "Timer.h"
 
@@ -29,7 +30,7 @@ private:
 
 	Shader* shader = nullptr;
 	Texture2D* texture = nullptr;
-	Mesh* mesh = nullptr;
+	Model* model = nullptr;
 
 	GLuint vao, vbo, ebo;
 
