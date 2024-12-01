@@ -1,5 +1,11 @@
 #include "GLTools.h"
 
+void CheckGLError() {
+	if (GLenum error = glGetError()) {
+		throw error;
+	}
+}
+
 char* LoadFileContext(const char* url) {
 	char* fileContext = NULL;
 	FILE* fp;
@@ -213,4 +219,13 @@ Mesh* LoadObjModel(const char* url, bool dropRepeat)
 	mesh->faceCount = mesh->indexCount / 3;
 
 	return mesh;
+}
+
+Mesh::~Mesh() {
+	if (indices) {
+		delete[] indices;
+	}
+	if (vertices) {
+		delete[] vertices;
+	}
 }

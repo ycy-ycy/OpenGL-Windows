@@ -2,7 +2,8 @@
 
 //#define GLEW_STATIC
 
-#include "GLTools.h"
+#include "Shader.h"
+#include "Texture2D.h"
 #include "Camera.h"
 #include "Timer.h"
 
@@ -24,25 +25,13 @@ private:
 	HWND handle;
 	int width, height;
 
-	GLuint program;
-	GLfloat vertices[32] = {
-		// positions       // colors        // texture coords
-		-0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.7f, 0.0f, 1.0f,
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, 0.0f, 0.0f, 0.2f, 1.0f, 1.0f, 0.0f,
-		0.5f, 0.5f, 0.0f, 0.0f, 0.9f, 0.9f, 1.0f, 1.0f
-	};
-	GLint posLoc, colLoc, texCoordLoc;
-	GLuint vbo, vao, ebo;
-	GLuint indices[6] = {
-		0, 1, 2,
-		0, 2, 3
-	};
-	GLuint texture;
-	GLint smp;
 	ULONG_PTR gdiplusToken;
-	GLint modelLoc, viewLoc, projLoc;
+
+	Shader* shader = nullptr;
+	Texture2D* texture = nullptr;
 	Mesh* mesh = nullptr;
+
+	GLuint vao, vbo, ebo;
 
 public:
 	void KeyDown(UINT key);

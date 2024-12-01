@@ -8,11 +8,7 @@ Engine::Engine(HINSTANCE hInstance, std::string windowClass) {
 	RegisterWindowClass();
 }
 
-Engine::~Engine() {
-	if (!UnregisterClass(this->windowClassW.c_str(), hInstance)) {
-		throw;
-	}
-}
+Engine::~Engine() {}
 
 bool Engine::Initialize(std::string windowTitle, int width, int height, int nCmdShow) {
 	this->windowTitle = windowTitle;

@@ -12,6 +12,8 @@
 #pragma comment(lib, "glew32.lib")
 #pragma comment(lib, "gdiplus.lib")
 
+void CheckGLError();
+
 char* LoadFileContext(const char* url);
 
 GLuint CompileShader(GLenum shaderType, const char* url);
@@ -29,9 +31,10 @@ struct Vertex {
 	float texCoord[2];
 };
 struct Mesh {
+	~Mesh();
 	uint32_t indexCount, vertexCount, faceCount;
-	uint32_t* indices;
-	Vertex* vertices;
+	uint32_t* indices = nullptr;
+	Vertex* vertices = nullptr;
 };
 
 Mesh* LoadObjModel(const char* url, bool dropRepeat = true);

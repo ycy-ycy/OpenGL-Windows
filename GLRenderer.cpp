@@ -12,6 +12,8 @@ GLRenderer::GLRenderer(HWND hwnd, int width, int height) {
 		throw "GLEW Init Error";
 	}
 
+	Gdiplus::GdiplusStartup(&gdiplusToken, new Gdiplus::GdiplusStartupInput(), NULL);
+
 	Resize(width, height);
 
 	InitializeGL();
@@ -35,6 +37,8 @@ GLRenderer::~GLRenderer() {
 		ReleaseDC(handle, dc);
 	}
 	Gdiplus::GdiplusShutdown(gdiplusToken);
+	delete mesh;
+	delete shader;
 }
 
 bool GLRenderer::CreateGLContext() {
@@ -64,17 +68,14 @@ void GLRenderer::Renderer() {
 	glClearColor(1.0f, 0.7f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(program);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glUniform1i(smp, 0);
+	shader->Apply();
+	shader->SetTexture2D("uTexture", texture);
 
 	glm::mat4 modelMat = glm::mat4(1.0f);
 
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
-	glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
-	glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(camera.GetProjMatrix()));
+	glUniformMatrix4fv(shader->modelLoc, 1, GL_FALSE, glm::value_ptr(modelMat));
+	glUniformMatrix4fv(shader->viewLoc, 1, GL_FALSE, glm::value_ptr(camera.GetViewMatrix()));
+	glUniformMatrix4fv(shader->projLoc, 1, GL_FALSE, glm::value_ptr(camera.GetProjMatrix()));
 
 	glBindVertexArray(vao);
 	//glDrawArrays(GL_TRIANGLES, 0, mesh->vertexCount);
@@ -85,56 +86,36 @@ void GLRenderer::Renderer() {
 }
 
 void GLRenderer::InitializeGL() {
-	program = CreateGPUProgram("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
-
-	posLoc = glGetAttribLocation(program, "pos");
-	colLoc = glGetAttribLocation(program, "col");
-	texCoordLoc = glGetAttribLocation(program, "texCoord");
-	modelLoc = glGetUniformLocation(program, "modelMat");
-	viewLoc = glGetUniformLocation(program, "viewMat");
-	projLoc = glGetUniformLocation(program, "projMat");
-
-	smp = glGetUniformLocation(program, "uTexture");
+	shader = new Shader("assets/vertexShader.glsl", "assets/fragmentShader.glsl");
+	texture = new Texture2D(L"assets/resources/img/texture.png", 0, GL_RGBA, GL_BGRA);
+	mesh = LoadObjModel("assets/teapot.obj");
 
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
 
-	mesh = LoadObjModel("assets/teapot.obj");
-
 	CreateGLBuffer(&vbo, GL_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->vertexCount * sizeof(Vertex), mesh->vertices);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glEnableVertexAttribArray(posLoc);
+	glEnableVertexAttribArray(shader->posLoc);
 	glVertexAttribPointer(
-		posLoc,
+		shader->posLoc,
 		3,
 		GL_FLOAT, 
 		GL_FALSE,
 		8 * sizeof(GLfloat), // stride
 		(void*)(0) // offset
 	);
-	glEnableVertexAttribArray(colLoc);
-	glVertexAttribPointer(colLoc, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(texCoordLoc);
-	glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(shader->colLoc);
+	glVertexAttribPointer(shader->colLoc, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(shader->texCoordLoc);
+	glVertexAttribPointer(shader->texCoordLoc, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
 
 	glBindBuffer(GL_ARRAY_BUFFER, NULL); // vbo
 	glBindVertexArray(NULL); // vao
 
 	CreateGLBuffer(&ebo, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, mesh->indexCount * sizeof(uint32_t), mesh->indices);
 
-	Gdiplus::GdiplusStartup(&gdiplusToken, new Gdiplus::GdiplusStartupInput(), NULL);
-
-	LoadTextureImage(&texture, L"assets/resources/img/texture.png", GL_TEXTURE_2D, 0, GL_RGBA, GL_BGRA);
-
-	if (glGetError()) {
-		throw;
-	}
-
-	//direction: +z: front; -z: back.
-	/*glPolygonMode(GL_FRONT, GL_FILL);
-	glPolygonMode(GL_BACK, GL_LINE);*/
-	glEnable(GL_DEPTH_TEST);
+	CheckGLError();
 }
 
 void GLRenderer::KeyDown(UINT key) {
